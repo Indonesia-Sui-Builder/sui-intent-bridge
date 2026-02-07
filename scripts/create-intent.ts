@@ -42,7 +42,7 @@ async function main() {
     const recipientBytes = ethers.getBytes(recipientEvm); // 20 bytes
 
     const SUI_AMOUNT = 50_000_000; // 0.05 SUI (MIST)
-    const ETH_AMOUNT = ethers.parseEther("0.0001"); // 0.0001 ETH (wei)
+    const ETH_AMOUNT = ethers.parseEther("0.00001"); // 0.00001 ETH (wei) -> ~$0.02 at $2000/ETH
 
     const tx = new Transaction();
 
@@ -54,9 +54,10 @@ async function main() {
         arguments: [
             coin,
             tx.pure.vector("u8", Array.from(recipientBytes)),
-            tx.pure.u64(ETH_AMOUNT) // u64 for wei? 
-            // In intent.move: eth_amount_expected: u64.
-            // 0.0001 ETH = 10^14 wei. u64 max is 1.8 * 10^19. Safe.
+            tx.pure.u64(ETH_AMOUNT), // start_output_amount
+            tx.pure.u64(ETH_AMOUNT / 2n), // min_output_amount (50% floor)
+            tx.pure.u64(600000), // duration (10 mins in ms)
+            tx.object("0x6") // clock
         ]
     });
 

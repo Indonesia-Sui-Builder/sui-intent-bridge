@@ -7,7 +7,7 @@ import {
     CoreBridgeVM
 } from "wormhole-solidity-sdk/interfaces/ICoreBridge.sol";
 
-contract IntentVault {
+contract IntentBridge {
     // Wormhole Chain ID for Sui is 21
     uint16 constant SUI_CHAIN_ID = 21;
 
