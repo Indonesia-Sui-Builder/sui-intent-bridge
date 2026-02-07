@@ -11,7 +11,7 @@ const MOCK_USDC_ADDRESS = process.env.MOCK_USDC_ADDRESS || "";
 
 // Test Data
 // Use a specific SUI recipient address (the user's address or a test address)
-const RECIPIENT_SUI = "0xa6a3da85bbe05da5bfd953708d56f1a3a023e7fb58e5a824a3d4de3791e8f690"; // 32 bytes hex
+const RECIPIENT_SUI = "0x1e3285adbedf3c5f3c06afae9dc26b6ffddda7fd8fb14c1ec98b82785bb20242"; // 32 bytes hex
 const AMOUNT = 100_000n; // 0.1 USDC (6 decimals)
 
 const account = privateKeyToAccount(PRIVATE_KEY_EVM as `0x${string}`);

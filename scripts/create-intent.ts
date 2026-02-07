@@ -1,42 +1,35 @@
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
-import * as dotenv from "dotenv";
 import { fromB64 } from "@mysten/sui/utils";
 import { ethers } from "ethers";
+import * as dotenv from "dotenv";
 
 dotenv.config();
 
 const SUI_RPC = process.env.SUI_RPC || getFullnodeUrl("testnet");
-const PRIVATE_KEY_SUI = process.env.PRIVATE_KEY_SUI || "";
 const SUI_PACKAGE_ID = process.env.SUI_PACKAGE_ID || "";
-// Recipient EVM address (can be random or specific)
-const PRIVATE_KEY_EVM = process.env.PRIVATE_KEY_EVM || "";
+const PRIVATE_KEY_SUI = process.env.PRIVATE_KEY_SUI || "";
 
 async function main() {
-    if (!PRIVATE_KEY_SUI) throw new Error("PRIVATE_KEY_SUI missing");
-    if (!SUI_PACKAGE_ID) throw new Error("SUI_PACKAGE_ID missing");
-
     const client = new SuiClient({ url: SUI_RPC });
+
+    // Decode Keypair
     let keypair: Ed25519Keypair;
-    try {
-        const raw = fromB64(PRIVATE_KEY_SUI);
-        keypair = Ed25519Keypair.fromSecretKey(raw.slice(1));
-    } catch {
-        // fallback
+    if (PRIVATE_KEY_SUI.startsWith("suiprivkey")) {
         const { decodeSuiPrivateKey } = await import("@mysten/sui/cryptography");
         const { secretKey } = decodeSuiPrivateKey(PRIVATE_KEY_SUI);
         keypair = Ed25519Keypair.fromSecretKey(secretKey);
+    } else {
+        const raw = fromB64(PRIVATE_KEY_SUI);
+        keypair = Ed25519Keypair.fromSecretKey(raw.slice(1));
     }
 
     const sender = keypair.getPublicKey().toSuiAddress();
     console.log(`Creator: ${sender}`);
 
-    // EVM Recipient
-    let recipientEvm = "0x1234567890123456789012345678901234567890";
-    if (PRIVATE_KEY_EVM) {
-        recipientEvm = new ethers.Wallet(PRIVATE_KEY_EVM).address;
-    }
+    // EVM Recipient (Hardcoded as requested)
+    const recipientEvm = "0xa82557BA1432D70641151fd75E1382D26387d3bA";
     console.log(`Target EVM Recipient: ${recipientEvm}`);
 
     const recipientBytes = ethers.getBytes(recipientEvm); // 20 bytes
@@ -46,7 +39,6 @@ async function main() {
 
     const tx = new Transaction();
 
-    // Split coin for payment
     const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(SUI_AMOUNT)]);
 
     tx.moveCall({
@@ -68,16 +60,14 @@ async function main() {
         options: { showEffects: true, showEvents: true }
     });
 
-    if (result.effects?.status.status !== "success") {
-        console.error("Create Intent failed:", result.effects?.status);
-        process.exit(1);
+    if (result.effects?.status.status === "success") {
+        const event = result.events?.find(e => e.type.includes("::intent::IntentCreated"));
+        const intentId = (event?.parsedJson as any)?.intent_id;
+        console.log(`✅ Intent Created! ID: ${intentId}`);
+        console.log(`Digest: ${result.digest}`);
+    } else {
+        console.error("❌ Failed:", result.effects?.status.error);
     }
-
-    const event = result.events?.find(e => e.type.includes("IntentCreated"));
-    const intentId = (event?.parsedJson as any)?.intent_id;
-
-    console.log(`✅ Intent Created! ID: ${intentId}`);
-    console.log(`Digest: ${result.digest}`);
 }
 
 main().catch(console.error);
