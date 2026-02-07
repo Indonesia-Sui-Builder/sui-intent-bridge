@@ -10,9 +10,13 @@ dotenv.config();
 
 const SUI_RPC = process.env.SUI_RPC || getFullnodeUrl("testnet");
 const PRIVATE_KEY_SUI = process.env.PRIVATE_KEY_SUI || "";
-const PACKAGE_ID_SUI = process.env.PACKAGE_ID_SUI || "";
+const SUI_PACKAGE_ID = process.env.SUI_PACKAGE_ID || "";
 const SOLVER_CONFIG_ID = process.env.SOLVER_CONFIG_ID || "";
 const WORMHOLE_STATE_ID = process.env.WORMHOLE_STATE_ID || "0x31358d198147da50db32eda2562951d53973a0c0ad5ed738e9b17d88b213d790";
+
+if (!SUI_PACKAGE_ID) console.warn("⚠️ SUI_PACKAGE_ID is empty!");
+if (!SOLVER_CONFIG_ID) console.warn("⚠️ SOLVER_CONFIG_ID is empty!");
+if (!PRIVATE_KEY_SUI) console.warn("⚠️ PRIVATE_KEY_SUI is empty!");
 
 const WORMHOLE_API_URL = "https://api.testnet.wormholescan.io";
 
@@ -30,12 +34,20 @@ async function initializeSuiKeypair(): Promise<Ed25519Keypair> {
         const { secretKey } = decodeSuiPrivateKey(PRIVATE_KEY_SUI);
         return Ed25519Keypair.fromSecretKey(secretKey);
     } else {
+        // Try raw base64 (32 bytes or 64 bytes)
         try {
-            const raw = fromB64(PRIVATE_KEY_SUI);
-            return Ed25519Keypair.fromSecretKey(raw.slice(1));
-        } catch {
-            return Ed25519Keypair.fromSecretKey(Buffer.from(PRIVATE_KEY_SUI, "base64"));
-        }
+            // First try pure base64
+            const raw = Buffer.from(PRIVATE_KEY_SUI, "base64");
+            if (raw.length === 32) {
+                return Ed25519Keypair.fromSecretKey(raw);
+            }
+            // If length is not 32, maybe it's 64 (priv+pub)
+            if (raw.length === 64) {
+                return Ed25519Keypair.fromSecretKey(raw.slice(0, 32));
+            }
+        } catch { }
+
+        throw new Error("Invalid SUI Private Key format in .env");
     }
 }
 
@@ -46,23 +58,36 @@ async function main() {
     while (!vaaBytes) {
         try {
             const url = `${WORMHOLE_API_URL}/v1/signed_vaa/${EMITTER_CHAIN}/${EMITTER_ADDRESS}/${SEQUENCE}`;
+            console.log(`Checking: ${url}`);
             const res = await axios.get(url);
+
             if (res.data.vaaBytes) {
-                vaaBytes = ethers.getBytes("0x" + res.data.vaaBytes);
+                console.log("VAA Found:", res.data.vaaBytes);
+                // The API returns base64 string, so we need to decode it
+                // ethers.getBytes handles hex strings, but maybe not raw base64 directly?
+                // Let's use Buffer for safety if it's base64
+                vaaBytes = new Uint8Array(Buffer.from(res.data.vaaBytes, "base64"));
             }
-        } catch (e) {
-            process.stdout.write(".");
+        } catch (e: any) {
+            console.log(`Polling error: ${e.message}`);
+            if (e.response) {
+                console.log(`Status: ${e.response.status}`);
+            }
         }
         await new Promise(r => setTimeout(r, 5000));
     }
 
     console.log(`\n✅ VAA Fetched! Length: ${vaaBytes.length}`);
 
-    console.log("\n💰 Claiming on Sui...");
+    console.log(`\n💰 Claiming on Sui...`);
+    console.log(`   Package: ${SUI_PACKAGE_ID}`);
+    console.log(`   Intent: ${INTENT_ID}`);
+    console.log(`   Config: ${SOLVER_CONFIG_ID}`);
+
     const suiKeypair = await initializeSuiKeypair();
     const txSui = new Transaction();
     txSui.moveCall({
-        target: `${PACKAGE_ID_SUI}::intent::claim_intent`,
+        target: `${SUI_PACKAGE_ID}::intent::claim_intent`,
         arguments: [
             txSui.object(INTENT_ID),
             txSui.object(SOLVER_CONFIG_ID),

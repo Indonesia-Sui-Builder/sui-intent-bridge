@@ -8,6 +8,9 @@
   "dependencies": {
     "@certusone/wormhole-sdk": "^0.10.18",
     "@mysten/sui": "^1.45.2",
+    "@wormhole-foundation/sdk": "^4.10.0",
+    "@wormhole-foundation/sdk-evm": "^4.10.0",
+    "@wormhole-foundation/sdk-sui": "^4.10.0",
     "axios": "^1.13.4",
     "dotenv": "^16.6.1",
     "ethers": "^6.0.0",
