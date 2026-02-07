@@ -1,0 +1,12 @@
+[package]
+name = "intent_bridge_test"
+version = "0.0.1"
+edition = "2024.beta"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet", override = true }
+Wormhole = { local = "deps/wormhole/sui/wormhole" }
+
+[addresses]
+intent_bridge = "0x0"
+wormhole = "0xf47329f4344f3bf0f8e436e2f7b485466cff300f12a166563995d3888c296a94"
