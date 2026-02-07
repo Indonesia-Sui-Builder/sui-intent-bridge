@@ -1,0 +1,22 @@
+{
+  "name": "sui-intent-crosschain-solver",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "solver": "npx ts-node scripts/solver.ts"
+  },
+  "dependencies": {
+    "@certusone/wormhole-sdk": "^0.10.18",
+    "@mysten/sui": "^1.45.2",
+    "axios": "^1.13.4",
+    "dotenv": "^16.6.1",
+    "ethers": "^6.0.0",
+    "fs": "^0.0.1-security",
+    "viem": "^2.45.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.0"
+  }
+}

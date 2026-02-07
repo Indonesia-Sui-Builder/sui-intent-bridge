@@ -1,0 +1,34 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Sui / Move
+contracts/sui/build/
+contracts/sui/Move.lock
+contracts/sui/build_output.json
+
+# EVM / Foundry
+contracts/evm/out/
+contracts/evm/cache/
+contracts/evm/broadcast/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
