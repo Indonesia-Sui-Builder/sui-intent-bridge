@@ -14,7 +14,7 @@ This repository implements a fully functional, bidirectional cross-chain intent 
 
 ## 🏗️ Architecture
 
-1.  **Intent Creation**: User locks funds in a contract (Sui or EVM) and defines a Dutch Auction (start price, floor price, duration).
+1.  **Intent Creation**: User locks funds in a contract (Sui or EVM (Base Sepolia)) and defines a Dutch Auction (start price, floor price, duration).
 2.  **Solver Detection**: Bot monitors events on the source chain and calculates the current required output based on the auction timer.
 3.  **Fulfillment**: If profitable, the bot sends the required funds directly to the user's recipient address on the target chain.
 4.  **Global Settlement**: The bot fetches a signed VAA from Wormhole as proof of payment and uses it to claim the user's locked funds on the source chain.
@@ -32,8 +32,8 @@ This repository implements a fully functional, bidirectional cross-chain intent 
 │   │   ├── utils.ts             # Shared math, clients, and VAA logic
 │   │   ├── solver_evm_to_sui.ts # Bot for Direction A
 │   │   └── solver_sui_to_evm.ts # Bot for Direction B
-│   ├── create-intent.ts         # Script to test Sui -> EVM
-│   ├── create-order.ts          # Script to test EVM -> Sui
+│   ├── create-intent.ts         # Script to test Sui -> EVM (Base Sepolia)
+│   ├── create-order.ts          # Script to test EVM (Base Sepolia) -> Sui
 │   └── deploy-...               # Deployment and configuration scripts
 └── README.md
 ```
