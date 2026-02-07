@@ -9,9 +9,9 @@ async function main() {
 
         // Parameters for Sequence 2
         const chain = "BaseSepolia";
-        // This is the EVM_INTENT_VAULT_ADDRESS
-        const emitterAddress = "0x8cadcb1f8f87c8796ea94fca7c78e0855ef99148";
-        const sequence = 3n;
+        // This is the NEW EVM_INTENT_VAULT_ADDRESS (consistencyLevel = 0)
+        const emitterAddress = "0x859AF05D60E1C0Fc282D4F9450C0977Cb82673C6";
+        const sequence = 0n;
 
         console.log(`\nFetching VAA for:`);
         console.log(`  Chain: ${chain}`);

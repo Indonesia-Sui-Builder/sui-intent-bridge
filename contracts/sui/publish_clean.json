@@ -1,7 +1,3 @@
-INCLUDING DEPENDENCY MoveStdlib
-INCLUDING DEPENDENCY Sui
-INCLUDING DEPENDENCY Wormhole
-BUILDING intent_bridge_test
 {
   "digest": "9freaiNxbJZFPKHQhcfN2Z68bgH8AH6tRDZ3tdEu3gT8",
   "transaction": {

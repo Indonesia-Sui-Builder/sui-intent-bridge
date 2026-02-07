@@ -155,7 +155,7 @@ contract IntentVault {
         bytes memory payload = abi.encode(intentId, solverSuiAddress);
 
         // 3. Publish Wormhole Message
-        // nonce = 0, consistencyLevel = 1 (Instant/Fast)
-        sequence = wormhole.publishMessage{value: fee}(0, payload, 1);
+        // nonce = 0, consistencyLevel = 0 (Instant)
+        sequence = wormhole.publishMessage{value: fee}(0, payload, 0);
     }
 }

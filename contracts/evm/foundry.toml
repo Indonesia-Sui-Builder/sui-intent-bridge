@@ -5,6 +5,7 @@ libs = ["lib"]
 remappings = [
     "@openzeppelin/=lib/openzeppelin-contracts/",
     "wormhole-solidity-sdk/=lib/wormhole-solidity-sdk/src/",
+    "wormhole-sdk/=lib/wormhole-solidity-sdk/src/",
     "forge-std/=lib/forge-std/src/"
 ]
 
