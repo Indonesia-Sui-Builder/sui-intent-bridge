@@ -35,7 +35,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <WagmiProvider config={wagmiConfig}>
             <QueryClientProvider client={queryClient}>
                 {/* Set defaultNetwork to 'devnet' or 'testnet' based on your primary development/testing environment */}
-                <SuiClientProvider networks={networkConfig} defaultNetwork="devnet">
+                <SuiClientProvider networks={networkConfig} defaultNetwork="testnet" >
                     <WalletProvider>
                         {children}
                     </WalletProvider>
