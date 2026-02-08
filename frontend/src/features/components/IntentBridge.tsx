@@ -11,6 +11,12 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+    Dialog,
+    DialogContent,
+    DialogTrigger,
+} from '@/components/ui/dialog'
+import { WalletButtonContent } from '@/components/wallet/WalletButton'
 import { useCreateSuiIntent } from '../hooks/sui/useCreateSuiIntent'
 import { useCreateEvmIntent } from '../hooks/evm/useCreateEvmIntent'
 
@@ -473,13 +479,22 @@ export function IntentBridge() {
 
                     <div className="pt-2">
                         {!isConnected ? (
-                            <Button
-                                fullWidth
-                                size="lg"
-                                className="bg-[#2a3040] text-indigo-300 font-semibold h-14 rounded-2xl hover:bg-[#343b4f]"
-                            >
-                                Connect Wallet
-                            </Button>
+                            <div className="w-full">
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button
+                                            fullWidth
+                                            size="lg"
+                                            className="bg-[#2a3040] text-indigo-300 font-semibold h-14 rounded-2xl hover:bg-[#343b4f]"
+                                        >
+                                            Connect Wallet
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="bg-[#131a2a] border-white/10 text-white sm:max-w-md">
+                                        <WalletButtonContent />
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
                         ) : needsApproval ? (
                             <Button
                                 fullWidth
