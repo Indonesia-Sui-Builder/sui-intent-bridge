@@ -17,7 +17,51 @@ This repository implements a fully functional, bidirectional cross-chain intent 
 1.  **Intent Creation**: User locks funds in a contract (Sui or EVM (Base Sepolia)) and defines a Dutch Auction (start price, floor price, duration).
 2.  **Solver Detection**: Bot monitors events on the source chain and calculates the current required output based on the auction timer.
 3.  **Fulfillment**: If profitable, the bot sends the required funds directly to the user's recipient address on the target chain.
-4.  **Global Settlement**: The bot fetches a signed VAA from Wormhole as proof of payment and uses it to claim the user's locked funds on the source chain.
+---
+
+## 📖 Workflow & Usage Guide
+
+### 1. Direction: Sui ➡️ EVM (Base Sepolia)
+
+**Goal**: Transfer SUI from Sui Testnet to ETH on Base Sepolia.
+
+1.  **User Action**:
+    *   Open the Frontend or use the script `scripts/create-intent.ts`.
+    *   Connect Sui Wallet and Base Wallet.
+    *   Enter amount of SUI to swap.
+    *   Click "Swap" / "Create Intent".
+    *   *Result*: Funds are locked in the `Intent` contract on Sui.
+
+2.  **Solver Action** (Automated):
+    *   The `solver_sui_to_evm.ts` script detects the `IntentCreated` event on Sui.
+    *   It verifies the profitability.
+    *   It sends ETH to your recipient address on Base Sepolia.
+    *   *Result*: You receive ETH on Base Sepolia immediately.
+
+3.  **Settlement** (Automated):
+    *   The solver waits for the Wormhole VAA (proof of transaction).
+    *   It uses this VAA to claim the locked SUI on the Sui network as reimbursement + profit.
+
+### 2. Direction: EVM (Base Sepolia) ➡️ Sui
+
+**Goal**: Transfer USDC from Base Sepolia to SUI on Sui Testnet.
+
+1.  **User Action**:
+    *   Open the Frontend or use the script `scripts/create-order.ts`.
+    *   Connect Base Wallet (EVM).
+    *   Approve USDC usage.
+    *   Click "Create Order".
+    *   *Result*: USDC is locked in the `IntentVault` on Base Sepolia.
+
+2.  **Solver Action** (Automated):
+    *   The `solver_evm_to_sui.ts` script detects the `OrderCreated` event on Base Sepolia.
+    *   It calculates the required SUI amount based on the Dutch Auction logic.
+    *   It sends SUI to your recipient address on Sui Testnet.
+    *   *Result*: You receive SUI on Sui Testnet immediately.
+
+3.  **Settlement** (Automated):
+    *   The solver waits for the Wormhole VAA.
+    *   It uses this VAA to claim the locked USDC on Base Sepolia.
 
 ---
 
@@ -66,35 +110,59 @@ EVM_INTENT_BRIDGE_ADDRESS=...
 SOLVER_STATE_ID=...
 ```
 
-### 4. Running the Solvers
+### 4. Running the Full Stack
 
-Open two terminals to run both directions:
+To run the complete system, you will need **3 separate terminal windows**.
 
-**Terminal 1: EVM ➡️ Sui**
+**Terminal 1: Run the EVM ➡️ Sui Solver**
+This bot listens for orders on Base Sepolia and fulfills them on Sui Testnet.
 ```bash
 npx ts-node scripts/solvers/solver_evm_to_sui.ts
 ```
 
-**Terminal 2: Sui ➡️ EVM**
+**Terminal 2: Run the Sui ➡️ EVM Solver**
+This bot listens for intents on Sui Testnet and fulfills them on Base Sepolia.
 ```bash
 npx ts-node scripts/solvers/solver_sui_to_evm.ts
+```
+
+**Terminal 3: Run the Frontend**
+Launch the user interface to interact with the bridge.
+```bash
+cd frontend
+bun run dev
+# Open http://localhost:3000 in your browser
 ```
 
 ---
 
 ## 🧪 Testing the Bridge
 
-### From EVM to Sui
-1. Update `scripts/create-order.ts` with your desired recipient.
-2. Run: `npx ts-node scripts/create-order.ts`
-3. Watch the EVM ➡️ Sui solver pick it up and complete the flow!
+### From EVM to Sui (Walkthrough)
 
-### From Sui to EVM
-1. Update `scripts/create-intent.ts` with your recipient address.
-2. Run: `npx ts-node scripts/create-intent.ts`
-3. Watch the Sui ➡️ EVM solver detect the intent and send you ETH on Base Sepolia!
+1.  **Start Solvers**: Ensure Terminal 1 is running.
+2.  **Open Frontend**: Go to `http://localhost:3000`.
+3.  **Connect Wallet**: Connect your EVM wallet (Base Sepolia).
+4.  **Create Order**:
+    *   Select "USDC" as input.
+    *   Enter amount (e.g., `0.1`).
+    *   Click "Approve USDC" -> "Create Order".
+5.  **Watch Terminal 1**: You will see the solver detect the order (`New Order Detected!`), calculate profit, and then execute the swap on Sui (`Executing Order on Sui...`).
+6.  **Receive Funds**: Check your Sui wallet. You will receive SUI immediately.
+
+### From Sui to EVM (Walkthrough)
+
+1.  **Start Solvers**: Ensure Terminal 2 is running.
+2.  **Open Frontend**: Go to `http://localhost:3000`.
+3.  **Connect Wallet**: Connect your Sui wallet (Testnet).
+4.  **Create Intent**:
+    *   Select "SUI" as input.
+    *   Enter amount.
+    *   Click "Swap".
+5.  **Watch Terminal 2**: The solver will detect the intent and send ETH to your Base Sepolia address.
 
 ---
+
 
 ## 🛠️ Tech Stack
 - **Sui**: Move Lang, @mysten/sui SDK
