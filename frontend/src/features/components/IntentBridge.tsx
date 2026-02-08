@@ -74,42 +74,64 @@ export function IntentBridge() {
 
     // ─── Balance Fetching ──────────────────────────────────────────────────────
 
-    // SUI Balance
-    const { data: suiBalanceData } = useSuiClientQuery(
+    // 1. SUI Balance (Native)
+    // SUI has 9 decimals
+    const { data: suiBalanceData, isError: isSuiError, error: suiError } = useSuiClientQuery(
         'getBalance',
         { owner: suiAccount?.address || '' },
-        { enabled: !!suiAccount?.address, refetchInterval: 5000 }
+        {
+            enabled: !!suiAccount?.address,
+            refetchInterval: 5000
+        }
     );
+
+    console.log('DEBUG: SUI Account:', suiAccount?.address);
+    console.log('DEBUG: SUI Balance Data:', suiBalanceData);
+    if (isSuiError) console.error('DEBUG: SUI Balance Error:', suiError);
 
     const suiBalance = useMemo(() => {
         if (!suiBalanceData) return '0.00'
-        // SUI has 9 decimals
         const bal = parseFloat(formatUnits(BigInt(suiBalanceData.totalBalance), 9))
-        return bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        return bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
     }, [suiBalanceData])
 
-    // EVM USDC Balance
+    // 2. EVM USDC Balance
+    // USDC has 6 decimals
+    // We can use wagmi's useReadContract directly here for clarity, or keep using the hook if it works.
+    // Let's use the hook's exposed balance for now but ensure it's robust.
+    const usdcBalanceRaw = createEvmIntent.balance;
+
+    console.log('DEBUG: EVM Address:', evmAddress);
+    console.log('DEBUG: USDC Balance Raw:', usdcBalanceRaw);
+
     const usdcBalance = useMemo(() => {
-        if (!createEvmIntent.balance) return '0.00'
-        // USDC has 6 decimals
-        const bal = parseFloat(formatUnits(createEvmIntent.balance, 6))
+        if (usdcBalanceRaw === undefined || usdcBalanceRaw === null) return '0.00'
+        const bal = parseFloat(formatUnits(usdcBalanceRaw, 6))
         return bal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    }, [createEvmIntent.balance])
+    }, [usdcBalanceRaw])
 
 
-    // EVM Native ETH Balance
-    const { data: ethBalanceData } = useBalance({
+    // 3. EVM Native ETH Balance
+    const { data: ethBalanceData, isError: isEthError, error: ethError } = useBalance({
         address: evmAddress,
+        query: {
+            enabled: !!evmAddress,
+            refetchInterval: 5000
+        }
     })
+
+    console.log('DEBUG: ETH Balance Data:', ethBalanceData);
+    if (isEthError) console.error('DEBUG: ETH Balance Error:', ethError);
 
     const ethBalance = useMemo(() => {
         if (!ethBalanceData) return '0.00'
+        // ETH has 18 decimals usually
         const bal = parseFloat(formatUnits(ethBalanceData.value, ethBalanceData.decimals))
         return bal.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
     }, [ethBalanceData])
 
     // Current Source Balance based on direction
-    const sourceBalance = direction === 'evm_to_sui' ? usdcBalance : suiBalance;
+    const sourceBalance = direction === 'evm_to_sui' ? `${usdcBalance} USDC` : `${suiBalance} SUI`;
 
     // Pending Intent Data (to save to history on success)
     const pendingIntentRef = useRef<{ amount: string, recipient: string, sourceToken: string, destToken: string } | null>(null);
@@ -146,11 +168,14 @@ export function IntentBridge() {
     const needsApproval = useMemo(() => {
         // If any required data is missing, we can't determine needed approval, so assume false or better yet handle loading state.
         // But for the logic bug: strict check against undefined.
-        if (direction !== 'evm_to_sui' || !amount || createEvmIntent.allowance === undefined) return false;
+        if (direction !== 'evm_to_sui' || !amount) return false;
+
+        // If allowance is loading (undefined), treat as 0 -> Needs Approval (safer than letting Review Order fail)
+        const currentAllowance = createEvmIntent.allowance ?? BigInt(0);
 
         const amountBigInt = parseUnits(amount, 6); // USDC
         // If allowance is 0, this returns true (0 < 100).
-        return createEvmIntent.allowance < amountBigInt;
+        return currentAllowance < amountBigInt;
     }, [direction, amount, createEvmIntent.allowance]);
 
     const isPending = createSuiIntent.isPending || createEvmIntent.isConfirming || createEvmIntent.isApproving;
@@ -424,9 +449,8 @@ export function IntentBridge() {
                     <div className="bg-[#131a2a] rounded-2xl p-4 border border-transparent transition-colors">
                         <div className="flex justify-between mb-3 text-sm text-white/40 font-medium">
                             <span>You Receive</span>
-                            {/* Destination balance could be fetched but usually less critical for "You Receive" input context unless it's a swap to existing. 
-                            For now, keep simple or use opposite balance if connected. */}
-                            <span>Balance: {direction === 'evm_to_sui' ? suiBalance : ethBalance}</span>
+                            {/* Destination balance */}
+                            <span>Balance: {direction === 'evm_to_sui' ? `${suiBalance} SUI` : `${ethBalance} ETH`}</span>
                         </div>
 
                         <div className="flex items-center gap-3">

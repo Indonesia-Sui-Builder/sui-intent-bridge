@@ -13,9 +13,8 @@ import '@mysten/dapp-kit/dist/index.css';
 const queryClient = new QueryClient();
 
 const wagmiConfig = createConfig({
-    chains: [base, baseSepolia],
+    chains: [baseSepolia],
     transports: {
-        [base.id]: http(),
         [baseSepolia.id]: http(),
     },
 });

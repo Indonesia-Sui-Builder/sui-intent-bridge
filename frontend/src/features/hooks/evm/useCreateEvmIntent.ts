@@ -1,4 +1,4 @@
-import { useWriteContract, useWaitForTransactionReceipt, useAccount, useReadContract } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt, useAccount, useReadContract, useSwitchChain } from 'wagmi';
 import { parseUnits, encodePacked, keccak256, erc20Abi, decodeEventLog } from 'viem';
 import { useState, useCallback, useEffect } from 'react';
 
@@ -42,8 +42,9 @@ export function useCreateEvmIntent(
     bridgeAddress?: `0x${string}`,
     usdcAddress?: `0x${string}`
 ) {
-    const { address } = useAccount();
+    const { address, chain } = useAccount();
     const { writeContractAsync } = useWriteContract();
+    const { switchChainAsync } = useSwitchChain();
 
     // State for createOrder tx
     const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined);
@@ -96,11 +97,12 @@ export function useCreateEvmIntent(
         args: address && bridgeAddress ? [address, bridgeAddress] : undefined,
         query: {
             enabled: !!address && !!bridgeAddress && !!usdcAddress,
+            refetchInterval: 3000, // Check allowance frequently
         }
     });
 
     // Read Balance
-    const { data: balance, refetch: refetchBalance } = useReadContract({
+    const { data: balance, refetch: refetchBalance, isError: isBalanceError, error: balanceError } = useReadContract({
         address: usdcAddress,
         abi: erc20Abi,
         functionName: 'balanceOf',
@@ -110,6 +112,11 @@ export function useCreateEvmIntent(
             refetchInterval: 5000, // Poll every 5s
         }
     });
+
+    console.log('DEBUG HOOK: USDC Address:', usdcAddress);
+    console.log('DEBUG HOOK: User Address:', address);
+    console.log('DEBUG HOOK: Balance Data:', balance);
+    if (isBalanceError) console.error('DEBUG HOOK: Balance Error:', balanceError);
 
     // Refetch allowance when approval confirms
     useEffect(() => {
@@ -124,6 +131,18 @@ export function useCreateEvmIntent(
 
     const approve = useCallback(async (amount: string) => {
         if (!usdcAddress || !bridgeAddress) return;
+
+        // Enforce Base Sepolia (84532)
+        if (chain?.id !== 84532) {
+            console.log("Wrong network detected. Switching to Base Sepolia...");
+            try {
+                await switchChainAsync({ chainId: 84532 });
+            } catch (e) {
+                console.error("Failed to switch chain:", e);
+                return; // Stop if switch fails
+            }
+        }
+
         const amountWei = parseUnits(amount, 6); // USDC 6 decimals
 
         try {
@@ -139,7 +158,7 @@ export function useCreateEvmIntent(
             console.error("Approval Failed:", error);
             throw error;
         }
-    }, [writeContractAsync, usdcAddress, bridgeAddress]);
+    }, [writeContractAsync, usdcAddress, bridgeAddress, chain, switchChainAsync]);
 
     const createOrder = useCallback(async (
         inputAmountUsdc: string,
@@ -149,6 +168,17 @@ export function useCreateEvmIntent(
         recipientSui: string
     ) => {
         if (!bridgeAddress) return;
+
+        // Enforce Base Sepolia (84532)
+        if (chain?.id !== 84532) {
+            console.log("Wrong network detected. Switching to Base Sepolia...");
+            try {
+                await switchChainAsync({ chainId: 84532 });
+            } catch (e) {
+                console.error("Failed to switch chain:", e);
+                return; // Stop if switch fails
+            }
+        }
 
         const inputAmountWei = parseUnits(inputAmountUsdc, 6); // USDC 6 decimals
         const startOutputWei = parseUnits(startOutputAmountSui, 9); // SUI 9 decimals
@@ -181,7 +211,7 @@ export function useCreateEvmIntent(
             throw error;
         }
 
-    }, [writeContractAsync, bridgeAddress]);
+    }, [writeContractAsync, bridgeAddress, chain, switchChainAsync]);
 
     return {
         createOrder,

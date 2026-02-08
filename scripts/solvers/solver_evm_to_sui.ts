@@ -46,8 +46,8 @@ const SETTLE_ORDER_ABI = [
 async function main() {
     console.log("🚀 Starting Solver (Direction A: EVM -> Sui)...");
 
-    let lastBlock = await evmPublicClient.getBlockNumber();
-    console.log(`   Initial Block: ${lastBlock}`);
+    let lastBlock = await evmPublicClient.getBlockNumber() - 500n;
+    console.log(`   Initial Block: ${lastBlock} (Looking back 500 blocks)`);
 
     // Infinite Polling Loop
     while (true) {
